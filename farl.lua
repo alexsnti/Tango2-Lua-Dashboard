@@ -30,6 +30,7 @@ local timerLeft = 0
 local maxTimerValue = 0
 -- For armed drawing
 local armed = 0
+local flight_mode = 0 -- local variable for flight mode
 -- For mode drawing
 local mode = 0
 -- Animation increment
@@ -457,10 +458,11 @@ local function gatherInput(event)
   currentVoltage = getValue('tx-voltage')
 
   -- Armed / Disarm / Buzzer switch
-  armed = getValue('sa')
+  -- armed = getValue('sa') -- no longer needed, handled by flight_mode
 
   -- Our "mode" switch
-  mode = getValue('sc')
+  -- mode = getValue('sc')
+   flight_mode = getValue("FM") -- reads flight mode from CrossFire telemetry
 
   -- Do some event handling to figure out what button(s) were pressed  :)
   if event > 0 then
@@ -501,14 +503,30 @@ local function gatherInput(event)
 end
 
 
-local function getModeText()
-  local modeText = "Unknown"
-  if mode < -512 then
-    modeText = "Angle"
-  elseif mode > -100 and mode < 100 then
-    modeText = "Acro"
-  elseif mode > 512 then
-    modeText = "Horizon"
+local function getModeText() -- modified to use telemetry and make modes more legible
+  local modeText = "DISARM"
+  if flight_mode == "!ERR" or flight_mode == "!ERR*" then
+    modeText = "ERROR"
+  elseif flight_mode == "!FS!" or flight_mode == "!FS!*" then
+    modeText = "FAILSAFE"
+  elseif flight_mode == "RTH"then
+    modeText = "RTH"
+  elseif flight_mode == "MANU"then
+    modeText = "MANUAL"
+  elseif flight_mode == "STAB"then
+    modeText = "ANGLE"
+  elseif flight_mode == "HOR" then
+    modeText = "HORIZON"
+  elseif flight_mode == "AIR" then
+    modeText = "AIR"
+  elseif flight_mode == "ACRO" then
+    modeText = "ACRO"
+  elseif flight_mode == "WAIT" or flight_mode == "WAIT*" then
+    modeText = "WAIT"
+  elseif ((string.sub(flight_mode,-1) == "*") and (flight_mode ~= "!ERR*") and (flight_mode ~= "!FS!*") and (flight_mode ~= "WAIT*")) then
+    modeText = "DISARM"
+  else
+    modeText = "UNKNOWN"
   end
   return modeText
 end
@@ -524,10 +542,10 @@ local function run(event)
   -- Set our animation "frame"
   setAnimationIncrement()
 
-  -- Check if we just armed...
-  if armed > 512 then
+  -- Check if we just armed... modified to use flight_mode instead of hard switch
+  if ((string.sub(flight_mode, -1) ~= "*") and (flight_mode ~= 0)) then
     isArmed = 1
-  elseif armed < 512 and isArmed == 1 then
+  elseif string.sub(flight_mode, -1) == "*" and isArmed == 1 then
     isArmed = 0
   else
     isArmed = 0
