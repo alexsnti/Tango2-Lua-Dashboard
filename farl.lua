@@ -510,8 +510,10 @@ end
 local function getModeText()
   local modeText = "Unknown"
 
-  if flight_mode == "!ERR" or flight_mode == "!ERR*" then
-    modeText = "----"
+  if ((string.sub(flight_mode,-1) == "*") and (flight_mode ~= "!ERR*") and (flight_mode ~= "!FS!*") and (flight_mode ~= "WAIT*")) then
+    modeText = "DISARM"
+  elseif flight_mode == "!ERR" or flight_mode == "!ERR*" then
+    modeText = "ERR"
   elseif flight_mode == "!FS!" or flight_mode == "!FS!*" then
     modeText = "FAILSAFE"
   elseif flight_mode == "RTH"then
@@ -527,9 +529,7 @@ local function getModeText()
   elseif flight_mode == "ACRO" then
     modeText = "ACRO"
   elseif flight_mode == "WAIT" or flight_mode == "WAIT*" then
-    modeText = "WgAIT"
-  elseif ((string.sub(flight_mode,-1) == "*") and (flight_mode ~= "!ERR*") and (flight_mode ~= "!FS!*") and (flight_mode ~= "WAIT*")) then
-    modeText = "DISARM"
+    modeText = "WAIT"
   else
     modeText = "----"
   end
@@ -548,9 +548,9 @@ local function run(event)
   setAnimationIncrement()
 
   -- Check if we just armed...
-  if armed > 512 then
-    isArmed = 1
-  elseif armed < 512 and isArmed == 1 then
+  if (string.sub(flight_mode,-1) ~= "*")
+      isArmed = 1
+  elseif (string.sub(flight_mode,-1) == "*") and (isArmed == 1) then
     isArmed = 0
   else
     isArmed = 0
